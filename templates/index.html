@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binary Relation Analyzer</title>
+    <!-- Prevent flash of wrong theme -->
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                document.documentElement.setAttribute('data-theme', savedTheme);
+            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <div class="background-glow"></div>
+
+    <main class="app-container">
+        <!-- Top Bar with Theme Toggle -->
+        <div class="top-bar">
+            <button type="button" class="theme-toggle-btn" onclick="toggleTheme()" id="themeToggleBtn" title="Switch Light/Dark Mode">
+                <span id="themeIcon">🌙</span>
+                <span id="themeText">Dark Mode</span>
+            </button>
+        </div>
+
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-badge">Discrete Mathematics Tool</div>
+            <h1>Binary Relation Analyzer</h1>
+            <p>Analyze properties of relations on a set, generate adjacency matrices, view directed graphs, and test for Equivalence Relations or Posets.</p>
+        </header>
+
+        <!-- Centered Input Card -->
+        <section class="card input-card">
+            <form method="POST" action="/" id="relationForm">
+                
+                <!-- Set A Input -->
+                <div class="form-group">
+                    <label for="set_a">
+                        <span class="label-title">Set A</span>
+                        <span class="label-sub">Space or comma separated elements</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="set_a" 
+                        name="set_a" 
+                        value="{{ raw_a }}" 
+                        placeholder="e.g. 1 2 3"
+                        autocomplete="off"
+                        required
+                        oninput="updateLivePreview()"
+                    >
+                </div>
+
+                <!-- Relation R Input -->
+                <div class="form-group">
+                    <label for="relation_r">
+                        <span class="label-title">Relation R</span>
+                        <span class="label-sub">Space-separated pairs (grouped into pairs automatically)</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="relation_r" 
+                        name="relation_r" 
+                        value="{{ raw_r }}" 
+                        placeholder="e.g. 1 2 3 1 3 1"
+                        autocomplete="off"
+                        oninput="updateLivePreview()"
+                    >
+                </div>
+
+                <!-- Live Preview Display -->
+                <div class="live-preview-box">
+                    <span class="preview-label">Live Preview:</span>
+                    <code id="livePreview" class="preview-code">R = {}</code>
+                    <div id="liveWarning" class="live-warning" style="display: none;"></div>
+                </div>
+
+                <!-- Server Error Message Under Inputs -->
+                {% if error %}
+                <div class="inline-error">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <span>{{ error }}</span>
+                </div>
+                {% endif %}
+
+                <!-- Example Preset Buttons -->
+                <div class="preset-row">
+                    <span class="preset-title">Examples:</span>
+                    <div class="preset-buttons">
+                        <button 
+                            type="button" 
+                            class="btn-preset" 
+                            onclick="generatePresetRelation('equality')" 
+                            title="(a, b) is included when a = b"
+                        >Equality (=)</button>
+                        
+                        <button 
+                            type="button" 
+                            class="btn-preset" 
+                            onclick="generatePresetRelation('divides')" 
+                            title="(a, b) is included when a divides b"
+                        >Divides (|)</button>
+                        
+                        <button 
+                            type="button" 
+                            class="btn-preset" 
+                            onclick="generatePresetRelation('less')" 
+                            title="(a, b) is included when a < b"
+                        >Less than (&lt;)</button>
+                        
+                        <button 
+                            type="button" 
+                            class="btn-preset" 
+                            onclick="generatePresetRelation('greater')" 
+                            title="(a, b) is included when a > b"
+                        >Greater than (&gt;)</button>
+                        
+                        <button 
+                            type="button" 
+                            class="btn-preset" 
+                            onclick="generatePresetRelation('greater_equal')" 
+                            title="(a, b) is included when a >= b"
+                        >Greater or Equal (&ge;)</button>
+                        
+                        <button 
+                            type="button" 
+                            class="btn-preset" 
+                            onclick="generatePresetRelation('empty')" 
+                            title="Fills no relation pairs (R = {})"
+                        >Empty (&empty;)</button>
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <div class="form-actions">
+                    <button type="submit" class="btn-submit">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        Check Relation
+                    </button>
+                </div>
+
+            </form>
+        </section>
+
+        <!-- Results Display -->
+        {% if results %}
+        <section class="results-container">
+
+            <!-- Parsed Confirmation Strip -->
+            <div class="card parsed-strip">
+                <span class="parsed-strip-label">Parsed Input Confirmation:</span>
+                <code>{{ set_a_str }}</code>
+                <code class="highlight-code">{{ relation_r_str }}</code>
+            </div>
+
+            <!-- Classifications Section -->
+            <div class="results-section">
+                <h3 class="section-title">Classifications</h3>
+                <div class="classification-grid">
+                    
+                    <!-- 1. Equivalence Relation Card -->
+                    <div class="card classification-card {% if results.equivalence.is_satisfied %}is-positive{% else %}is-negative{% endif %}">
+                        <div class="classification-header">
+                            <h3>Equivalence Relation</h3>
+                            {% if results.equivalence.is_satisfied %}
+                                <span class="badge badge-yes">YES</span>
+                            {% else %}
+                                <span class="badge badge-no">NO</span>
+                            {% endif %}
+                        </div>
+                        <div class="req-checklist">
+                            {% for req in results.equivalence.requirements %}
+                                <span class="req-item {% if req.ok %}req-ok{% else %}req-fail{% endif %}">
+                                    {% if req.ok %}✓{% else %}✗{% endif %} {{ req.name }}
+                                </span>
+                            {% endfor %}
+                        </div>
+                        <p class="classification-reason">{{ results.equivalence.reason }}</p>
+                    </div>
+
+                    <!-- 2. Partial Order (Poset) Card -->
+                    <div class="card classification-card {% if results.poset.is_satisfied %}is-positive{% else %}is-negative{% endif %}">
+                        <div class="classification-header">
+                            <h3>Partial Order (Poset)</h3>
+                            {% if results.poset.is_satisfied %}
+                                <span class="badge badge-yes">YES</span>
+                            {% else %}
+                                <span class="badge badge-no">NO</span>
+                            {% endif %}
+                        </div>
+                        <div class="req-checklist">
+                            {% for req in results.poset.requirements %}
+                                <span class="req-item {% if req.ok %}req-ok{% else %}req-fail{% endif %}">
+                                    {% if req.ok %}✓{% else %}✗{% endif %} {{ req.name }}
+                                </span>
+                            {% endfor %}
+                        </div>
+                        <p class="classification-reason">{{ results.poset.reason }}</p>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Six Fundamental Relation Properties Section -->
+            <div class="results-section">
+                <h3 class="section-title">Properties</h3>
+                <div class="properties-grid">
+                    {% for prop in results.properties %}
+                    <div class="prop-card {% if prop.satisfied %}is-yes{% else %}is-no{% endif %}">
+                        <div class="prop-card-header">
+                            <h4 class="prop-card-title">{{ prop.name }}</h4>
+                            {% if prop.satisfied %}
+                                <span class="badge badge-yes">Yes</span>
+                            {% else %}
+                                <span class="badge badge-no">No</span>
+                            {% endif %}
+                        </div>
+                        <div class="prop-card-def">
+                            <code>{{ prop.definition }}</code>
+                        </div>
+                        <p class="prop-card-reason">{{ prop.reason }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Visual Representations Section (Relation Matrix & Directed Graph SVG) -->
+            <div class="results-section">
+                <h3 class="section-title">Visual representation</h3>
+                <div class="visuals-grid">
+                    <!-- Relation Matrix Table -->
+                    <div class="card visual-card">
+                        <h3 class="card-title">Relation Matrix (Adjacency)</h3>
+                        <p class="card-subtitle">Entry (x, y) = 1 if (x, y) ∈ R, else 0</p>
+                        <div class="matrix-wrapper">
+                            <table class="relation-matrix">
+                                <thead>
+                                    <tr>
+                                        <th class="matrix-corner">A \ A</th>
+                                        {% for col in results.matrix.headers %}
+                                            <th>{{ col }}</th>
+                                        {% endfor %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in results.matrix.rows %}
+                                    <tr>
+                                        <th class="row-label">{{ row.element }}</th>
+                                        {% for cell in row.cells %}
+                                            <td class="{% if cell.value == 1 %}val-one{% else %}val-zero{% endif %} {% if cell.is_diagonal %}val-diag{% endif %}">
+                                                {{ cell.value }}
+                                            </td>
+                                        {% endfor %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- SVG Directed Graph -->
+                    <div class="card visual-card">
+                        <h3 class="card-title">Directed Graph Diagram</h3>
+                        <p class="card-subtitle">Nodes represent elements of set A; directed arrows represent pairs in R</p>
+                        <div class="graph-container">
+                            {{ results.svg_graph | safe }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+        {% endif %}
+
+        <footer class="app-footer">
+            <p>Discrete Mathematics Relation Analyzer &bull; Pure Python &amp; Flask</p>
+        </footer>
+    </main>
+
+    <!-- Client-side JavaScript for Live Preview, Dynamic Presets, and Theme Switching -->
+    <script>
+        function updateLivePreview() {
+            const rawR = document.getElementById('relation_r').value.trim();
+            const livePreview = document.getElementById('livePreview');
+            const liveWarning = document.getElementById('liveWarning');
+
+            if (!rawR) {
+                livePreview.textContent = 'R = {}';
+                liveWarning.style.display = 'none';
+                return;
+            }
+
+            const tokens = rawR.split(/\s+/).filter(t => t.length > 0);
+            const pairsSet = new Set();
+            const pairsList = [];
+
+            for (let i = 0; i < tokens.length; i += 2) {
+                if (i + 1 < tokens.length) {
+                    const pairStr = `(${tokens[i]},${tokens[i+1]})`;
+                    if (!pairsSet.has(pairStr)) {
+                        pairsSet.add(pairStr);
+                        pairsList.push(pairStr);
+                    }
+                }
+            }
+
+            if (pairsList.length === 0) {
+                livePreview.textContent = 'R = {}';
+            } else {
+                livePreview.textContent = `R = {${pairsList.join(', ')}}`;
+            }
+
+            // Check if element count is odd
+            if (tokens.length % 2 !== 0) {
+                liveWarning.textContent = `(Waiting for pair completion... Odd count: ${tokens.length} elements)`;
+                liveWarning.style.display = 'block';
+            } else {
+                liveWarning.style.display = 'none';
+            }
+        }
+
+        // Parses the current value in Set A box
+        function parseSetInput() {
+            const rawA = document.getElementById('set_a').value.trim();
+            if (!rawA) {
+                return { valid: false, message: "Enter set A first", tokens: [] };
+            }
+
+            let items = [];
+            if (rawA.includes(',')) {
+                items = rawA.split(',').map(s => s.trim()).filter(s => s.length > 0);
+            } else {
+                items = rawA.split(/\s+/).filter(s => s.length > 0);
+            }
+
+            // Remove duplicates
+            const uniqueTokens = Array.from(new Set(items));
+            if (uniqueTokens.length === 0) {
+                return { valid: false, message: "Enter set A first", tokens: [] };
+            }
+
+            // Check if all elements are numeric
+            const isNumeric = uniqueTokens.every(tok => !isNaN(tok) && !isNaN(parseFloat(tok)));
+
+            return {
+                valid: true,
+                isNumeric: isNumeric,
+                tokens: uniqueTokens
+            };
+        }
+
+        // Generates relation R from the current elements in Set A
+        function generatePresetRelation(type) {
+            const liveWarning = document.getElementById('liveWarning');
+            const parsedA = parseSetInput();
+
+            if (!parsedA.valid) {
+                liveWarning.textContent = parsedA.message;
+                liveWarning.style.display = 'block';
+                return;
+            }
+
+            // Check numeric requirement for mathematical order presets
+            const numericTypes = ['divides', 'less', 'greater', 'greater_equal'];
+            if (numericTypes.includes(type) && !parsedA.isNumeric) {
+                liveWarning.textContent = "This example needs numbers";
+                liveWarning.style.display = 'block';
+                return;
+            }
+
+            liveWarning.style.display = 'none';
+
+            if (type === 'empty') {
+                document.getElementById('relation_r').value = "";
+                updateLivePreview();
+                return;
+            }
+
+            let tokens = parsedA.tokens;
+            let pairs = [];
+
+            if (parsedA.isNumeric) {
+                // Sort numbers numerically in ascending order for tidy output
+                const numTokens = tokens.map(Number).sort((a, b) => a - b);
+
+                for (let i = 0; i < numTokens.length; i++) {
+                    for (let j = 0; j < numTokens.length; j++) {
+                        const a = numTokens[i];
+                        const b = numTokens[j];
+
+                        let include = false;
+                        if (type === 'equality' && a === b) include = true;
+                        else if (type === 'divides' && a !== 0 && b % a === 0) include = true;
+                        else if (type === 'less' && a < b) include = true;
+                        else if (type === 'greater' && a > b) include = true;
+                        else if (type === 'greater_equal' && a >= b) include = true;
+
+                        if (include) {
+                            pairs.push(`${a} ${b}`);
+                        }
+                    }
+                }
+            } else {
+                // String elements (for equality)
+                tokens.sort();
+                for (let i = 0; i < tokens.length; i++) {
+                    for (let j = 0; j < tokens.length; j++) {
+                        const a = tokens[i];
+                        const b = tokens[j];
+                        if (type === 'equality' && a === b) {
+                            pairs.push(`${a} ${b}`);
+                        }
+                    }
+                }
+            }
+
+            // Fill ONLY the Relation R box in flat space-separated pair format
+            document.getElementById('relation_r').value = pairs.join(' ');
+            updateLivePreview();
+        }
+
+        // Theme Toggle Functionality
+        function syncThemeUI(theme) {
+            const themeIcon = document.getElementById('themeIcon');
+            const themeText = document.getElementById('themeText');
+            if (theme === 'light') {
+                if (themeIcon) themeIcon.textContent = '☀️';
+                if (themeText) themeText.textContent = 'Light Mode';
+            } else {
+                if (themeIcon) themeIcon.textContent = '🌙';
+                if (themeText) themeText.textContent = 'Dark Mode';
+            }
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            syncThemeUI(newTheme);
+        }
+
+        // Initialize UI states on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            updateLivePreview();
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+            syncThemeUI(currentTheme);
+        });
+    </script>
+</body>
+</html>
