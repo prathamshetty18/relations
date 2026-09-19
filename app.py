@@ -25,7 +25,7 @@ from relations import (
     transitive,
 )
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder="templates", static_folder="static")
 
 
 def format_set(s: set) -> str:
