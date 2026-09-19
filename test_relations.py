@@ -280,6 +280,27 @@ class TestInputParsingAndErrors(unittest.TestCase):
         parsed_empty_r = parse_relation("", self.A)
         self.assertEqual(parsed_empty_r, set())
 
+    def test_bracketed_inputs(self):
+        """Test parsing inputs containing delimiters like { }, ( ), [ ], < >, commas, and semicolons."""
+        # Test set parsing with various brackets and delimiters
+        self.assertEqual(parse_set("{1,2,3}"), {'1', '2', '3'})
+        self.assertEqual(parse_set("[a, b, c]"), {'a', 'b', 'c'})
+        self.assertEqual(parse_set("<1 2 3>"), {'1', '2', '3'})
+        self.assertEqual(parse_set("1; 2; 3"), {'1', '2', '3'})
+
+        # Test relation parsing with bracketed tuples and sets
+        r1 = parse_relation("{(1,1),(2,2),(3,3)}", self.A)
+        self.assertEqual(r1, {('1', '1'), ('2', '2'), ('3', '3')})
+
+        r2 = parse_relation("[(1, 2), (2, 3)]", self.A)
+        self.assertEqual(r2, {('1', '2'), ('2', '3')})
+
+        r3 = parse_relation("<1, 2> <3, 1>", self.A)
+        self.assertEqual(r3, {('1', '2'), ('3', '1')})
+
+        r4 = parse_relation("1,2; 2,3", self.A)
+        self.assertEqual(r4, {('1', '2'), ('2', '3')})
+
 
 def run_custom_test_runner():
     """Custom test runner that outputs clear PASS/FAIL results for each test."""

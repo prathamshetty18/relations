@@ -19,34 +19,29 @@ import re
 def parse_set(input_str: str) -> set[str]:
     """
     Parses a user input string into a set of elements (strings).
-
-    Supports input formats like:
-    - Comma-separated: "1, 2, 3"
-    - Space-separated: "1 2 3"
-    - Set notation: "{1, 2, 3}"
+    Replaces delimiters { } ( ) [ ] < > , ; with spaces before splitting.
     """
-    # Remove leading/trailing curly braces and whitespace
-    cleaned = input_str.strip().strip("{}")
-    if not cleaned:
+    if not input_str:
         return set()
 
-    # Split by comma if present, otherwise split by whitespace
-    if "," in cleaned:
-        elements = [item.strip() for item in cleaned.split(",") if item.strip()]
-    else:
-        elements = [item.strip() for item in cleaned.split() if item.strip()]
+    # Replace delimiters { } ( ) [ ] < > , ; with spaces
+    cleaned = re.sub(r'[\{\}\(\)\[\]\<\>\,;]', ' ', input_str)
+    elements = [item.strip() for item in cleaned.split() if item.strip()]
 
     return set(elements)
 
 
 def parse_relation(input_str: str, A: set[str] = None) -> set[tuple[str, str]]:
     """
-    Parses a user input string of space-separated elements into a set of ordered pairs.
+    Parses a user input string into a set of ordered pairs.
+    Replaces delimiters { } ( ) [ ] < > , ; with spaces before grouping into pairs.
 
-    Example input: "1 2 3 1 3 1" -> {('1', '2'), ('3', '1')}
+    Example inputs:
+      - "1 2 3 1 3 1" -> {('1', '2'), ('3', '1')}
+      - "{(1,1), (2,2), (3,3)}" -> {('1', '1'), ('2', '2'), ('3', '3')}
 
     Args:
-        input_str: Space-separated elements representing relation pairs.
+        input_str: User input string representing relation pairs.
         A: Optional set of allowed elements. If provided, validates that all
            relation elements belong to set A.
 
@@ -56,8 +51,13 @@ def parse_relation(input_str: str, A: set[str] = None) -> set[tuple[str, str]]:
     Raises:
         ValueError: If the number of elements is odd, or if an element is not in set A.
     """
-    # Split input string into a list of space-separated elements
-    elements = input_str.strip().split()
+    if not input_str:
+        print("R = {}")
+        return set()
+
+    # Replace delimiters { } ( ) [ ] < > , ; with spaces
+    cleaned = re.sub(r'[\{\}\(\)\[\]\<\>\,;]', ' ', input_str)
+    elements = [item.strip() for item in cleaned.split() if item.strip()]
 
     if not elements:
         print("R = {}")

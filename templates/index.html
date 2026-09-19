@@ -49,14 +49,14 @@
                 <div class="form-group">
                     <label for="set_a">
                         <span class="label-title">Set A</span>
-                        <span class="label-sub">Space or comma separated elements</span>
+                        <span class="label-sub">You can also type with brackets, e.g. {1,2,3}</span>
                     </label>
                     <input 
                         type="text" 
                         id="set_a" 
                         name="set_a" 
                         value="{{ raw_a }}" 
-                        placeholder="e.g. 1 2 3"
+                        placeholder="e.g. {1,2,3} or 1 2 3"
                         autocomplete="off"
                         required
                         oninput="updateLivePreview()"
@@ -67,14 +67,14 @@
                 <div class="form-group">
                     <label for="relation_r">
                         <span class="label-title">Relation R</span>
-                        <span class="label-sub">Space-separated pairs (grouped into pairs automatically)</span>
+                        <span class="label-sub">e.g. {(1,1),(2,2)} or 1 1 2 2</span>
                     </label>
                     <input 
                         type="text" 
                         id="relation_r" 
                         name="relation_r" 
                         value="{{ raw_r }}" 
-                        placeholder="e.g. 1 2 3 1 3 1"
+                        placeholder="e.g. {(1,1),(2,2)} or 1 1 2 2"
                         autocomplete="off"
                         oninput="updateLivePreview()"
                     >
@@ -291,18 +291,24 @@
 
     <!-- Client-side JavaScript for Live Preview, Dynamic Presets, and Theme Switching -->
     <script>
+        // Cleans input by replacing { } ( ) [ ] < > , ; with spaces
+        function cleanInput(str) {
+            if (!str) return [];
+            return str.replace(/[\{\}\(\)\[\]\<\>\,;]/g, ' ').trim().split(/\s+/).filter(s => s.length > 0);
+        }
+
         function updateLivePreview() {
-            const rawR = document.getElementById('relation_r').value.trim();
+            const rawR = document.getElementById('relation_r').value;
             const livePreview = document.getElementById('livePreview');
             const liveWarning = document.getElementById('liveWarning');
 
-            if (!rawR) {
+            const tokens = cleanInput(rawR);
+            if (tokens.length === 0) {
                 livePreview.textContent = 'R = {}';
                 liveWarning.style.display = 'none';
                 return;
             }
 
-            const tokens = rawR.split(/\s+/).filter(t => t.length > 0);
             const pairsSet = new Set();
             const pairsList = [];
 
@@ -333,24 +339,16 @@
 
         // Parses the current value in Set A box
         function parseSetInput() {
-            const rawA = document.getElementById('set_a').value.trim();
-            if (!rawA) {
-                return { valid: false, message: "Enter set A first", tokens: [] };
-            }
+            const rawA = document.getElementById('set_a').value;
+            const tokens = cleanInput(rawA);
 
-            let items = [];
-            if (rawA.includes(',')) {
-                items = rawA.split(',').map(s => s.trim()).filter(s => s.length > 0);
-            } else {
-                items = rawA.split(/\s+/).filter(s => s.length > 0);
+            if (tokens.length === 0) {
+                return { valid: false, message: "Enter set A first", tokens: [] };
             }
 
             // Remove duplicates
-            const uniqueTokens = Array.from(new Set(items));
-            if (uniqueTokens.length === 0) {
-                return { valid: false, message: "Enter set A first", tokens: [] };
-            }
-
+            const uniqueTokens = Array.from(new Set(tokens));
+            
             // Check if all elements are numeric
             const isNumeric = uniqueTokens.every(tok => !isNaN(tok) && !isNaN(parseFloat(tok)));
 
