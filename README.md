@@ -1,6 +1,10 @@
 # Binary Relation Analyzer & Property Checker
 
+[![Live Demo](https://img.shields.io/badge/Vercel-Live%20Demo-brightgreen?style=for-the-badge&logo=vercel)](https://relations-liart.vercel.app/)
+
 A Discrete Mathematics Python application and interactive web interface for parsing, testing, and visualizing binary relations on a given set $A$.
+
+🌐 **Live Web Application**: [https://relations-liart.vercel.app/](https://relations-liart.vercel.app/)
 
 The application evaluates fundamental mathematical properties, determines whether a relation is an **Equivalence Relation** or a **Partial Order (Poset)**, generates adjacency relation matrices, and renders SVG directed graph diagrams.
 
@@ -53,6 +57,8 @@ RELATONS/
 │   └── index.html        # Web app HTML template with theme switcher & live preview JS
 ├── static/
 │   └── style.css         # CSS design system supporting Dark & Light themes
+├── requirements.txt      # Python dependencies for Vercel deployment
+├── vercel.json           # Vercel serverless build configuration
 └── README.md             # Project documentation
 ```
 
@@ -60,23 +66,25 @@ RELATONS/
 
 ## 🚀 Getting Started
 
-### Prerequisites
+### 1. Access the Live Web Application
 
-- Python 3.10+
-- Flask (`pip install flask`)
-
-### 1. Run the Web Application
-
-Start the Flask server:
-```bash
-python app.py
-```
-Open your browser and navigate to:
-👉 **[http://127.0.0.1:5000](http://127.0.0.1:5000)**
+The app is deployed on Vercel:
+👉 **[https://relations-liart.vercel.app/](https://relations-liart.vercel.app/)**
 
 ---
 
-### 2. Run the Command-Line Interface (CLI)
+### 2. Run Locally
+
+Start the local Flask development server:
+```bash
+pip install -r requirements.txt
+python app.py
+```
+Open your browser and navigate to `http://127.0.0.1:5000`.
+
+---
+
+### 3. Run the Command-Line Interface (CLI)
 
 Run the interactive terminal app:
 ```bash
@@ -101,7 +109,7 @@ ANALYSIS RESULTS:
 
 ---
 
-### 3. Run Automated Unit Tests
+### 4. Run Automated Unit Tests
 
 Execute the unit test suite built with Python's built-in `unittest` module:
 ```bash
@@ -123,6 +131,7 @@ Tests cover:
 
 - **Python**: Core logic & algorithms (no external third-party math libraries)
 - **Flask**: Lightweight Web Server
+- **Vercel**: Serverless Cloud Hosting
 - **HTML5 & Vanilla CSS3**: Responsive UI, CSS Variables, Glassmorphism, Dark/Light Mode
 - **SVG**: Pure vector graph rendering
 - **unittest**: Native Python test suite
