@@ -1,8 +1,8 @@
-# Binary Relation Analyzer & Property Checker
+# Relation Analyzer & Property Checker
 
 [![Live Demo](https://img.shields.io/badge/Vercel-Live%20Demo-brightgreen?style=for-the-badge&logo=vercel)](https://relations-liart.vercel.app/)
 
-A Discrete Mathematics Python application and interactive web interface for parsing, testing, and visualizing binary relations on a given set $A$.
+A Discrete Mathematics Python application and interactive web interface for parsing, testing, and visualizing relations on a given set $A$.
 
 🌐 **Live Web Application**: [https://relations-liart.vercel.app/](https://relations-liart.vercel.app/)
 

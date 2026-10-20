@@ -37,8 +37,8 @@ def main():
     print("                 RELATION PROPERTY CHECKER")
     print("=" * 65)
     print("Input formats accepted:")
-    print("  Set A:      1, 2, 3        or   {a, b, c}")
-    print("  Relation R: 1 2 3 1 3 1    (space-separated pairs)")
+    print("  Set A:      1, 2, 3        or   {a, b, c}    or   ∅ / {} (null set)")
+    print("  Relation R: 1 2 3 1 3 1    or   {(1,2)}      or   ∅ / {} (null set)")
     print("-" * 65)
 
     # Prompt user for inputs
@@ -66,7 +66,10 @@ def main():
     is_refl, ce_refl = reflexive(A, R)
     if is_refl:
         print("- Reflexive:     YES")
-        print("  Reason: For every element x in A, (x, x) is in R.")
+        if len(A) == 0:
+            print("  Reason: Vacuously true: Set A is empty (no elements exist).")
+        else:
+            print("  Reason: For every element x in A, (x, x) is in R.")
     else:
         x, _ = ce_refl
         print("- Reflexive:     NO")
@@ -76,7 +79,10 @@ def main():
     is_irrefl, ce_irrefl = irreflexive(A, R)
     if is_irrefl:
         print("\n- Irreflexive:   YES")
-        print("  Reason: For every element x in A, (x, x) is NOT in R.")
+        if len(A) == 0:
+            print("  Reason: Vacuously true: Set A is empty (no elements exist).")
+        else:
+            print("  Reason: For every element x in A, (x, x) is NOT in R.")
     else:
         x, _ = ce_irrefl
         print("\n- Irreflexive:   NO")
@@ -86,7 +92,10 @@ def main():
     is_sym, ce_sym = symmetric(A, R)
     if is_sym:
         print("\n- Symmetric:     YES")
-        print("  Reason: For every (x, y) in R, (y, x) is also in R.")
+        if len(R) == 0:
+            print("  Reason: Vacuously true: Relation R is empty (no pairs exist).")
+        else:
+            print("  Reason: For every (x, y) in R, (y, x) is also in R.")
     else:
         x, y = ce_sym
         print("\n- Symmetric:     NO")
@@ -96,7 +105,10 @@ def main():
     is_antisym, ce_antisym = antisymmetric(A, R)
     if is_antisym:
         print("\n- Antisymmetric: YES")
-        print("  Reason: No distinct elements x != y exist where both (x, y) and (y, x) are in R.")
+        if len(R) == 0:
+            print("  Reason: Vacuously true: Relation R is empty (no pairs exist).")
+        else:
+            print("  Reason: No distinct elements x != y exist where both (x, y) and (y, x) are in R.")
     else:
         x, y = ce_antisym
         print("\n- Antisymmetric: NO")
@@ -106,7 +118,10 @@ def main():
     is_asym, ce_asym = asymmetric(A, R)
     if is_asym:
         print("\n- Asymmetric:    YES")
-        print("  Reason: For every pair (x, y) in R, reverse pair (y, x) is NOT in R.")
+        if len(R) == 0:
+            print("  Reason: Vacuously true: Relation R is empty (no pairs exist).")
+        else:
+            print("  Reason: For every pair (x, y) in R, reverse pair (y, x) is NOT in R.")
     else:
         x, y = ce_asym
         if x == y:
@@ -120,7 +135,10 @@ def main():
     is_trans, ce_trans = transitive(A, R)
     if is_trans:
         print("\n- Transitive:    YES")
-        print("  Reason: For every (x, y) in R and (y, z) in R, (x, z) is also in R.")
+        if len(R) == 0:
+            print("  Reason: Vacuously true: Relation R is empty (no pairs exist).")
+        else:
+            print("  Reason: For every (x, y) in R and (y, z) in R, (x, z) is also in R.")
     else:
         (x, y), (y2, z), (missing_x, missing_z) = ce_trans
         print("\n- Transitive:    NO")

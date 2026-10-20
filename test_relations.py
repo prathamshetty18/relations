@@ -2,7 +2,7 @@
 test_relations.py
 
 Unit tests for relations.py module using Python's built-in unittest framework.
-Tests all six binary relation property checking functions (reflexive, irreflexive,
+Tests all six relation property checking functions (reflexive, irreflexive,
 symmetric, antisymmetric, asymmetric, transitive) and input parsing error handling.
 """
 
@@ -273,12 +273,32 @@ class TestInputParsingAndErrors(unittest.TestCase):
         self.assertEqual(len(R), 1)
 
     def test_empty_set_parsing(self):
-        """Test parsing empty strings for set A and relation R."""
-        parsed_empty_a = parse_set("")
-        self.assertEqual(parsed_empty_a, set())
+        """Test parsing various null/empty set inputs for set A and relation R."""
+        null_inputs = [
+            "",
+            "   ",
+            "{}",
+            "{   }",
+            "∅",
+            r"\emptyset",
+            "null",
+            "NULL",
+            "null set",
+            "NULL SET",
+            "empty",
+            "EMPTY",
+            "empty set",
+            "phi",
+            "φ",
+            "set()",
+        ]
+        for inp in null_inputs:
+            with self.subTest(input=inp):
+                parsed_a = parse_set(inp)
+                self.assertEqual(parsed_a, set(), f"parse_set failed for null input: {inp!r}")
 
-        parsed_empty_r = parse_relation("", self.A)
-        self.assertEqual(parsed_empty_r, set())
+                parsed_r = parse_relation(inp, self.A)
+                self.assertEqual(parsed_r, set(), f"parse_relation failed for null input: {inp!r}")
 
     def test_bracketed_inputs(self):
         """Test parsing inputs containing delimiters like { }, ( ), [ ], < >, commas, and semicolons."""

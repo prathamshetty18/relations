@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Binary Relation Analyzer</title>
+    <title>Relation Analyzer</title>
     <!-- Prevent flash of wrong theme -->
     <script>
         (function() {
@@ -37,7 +37,7 @@
         <!-- Header -->
         <header class="app-header">
             <div class="header-badge">Discrete Mathematics Tool</div>
-            <h1>Binary Relation Analyzer</h1>
+            <h1>Relation Analyzer</h1>
             <p>Analyze properties of relations on a set, generate adjacency matrices, view directed graphs, and test for Equivalence Relations or Posets.</p>
         </header>
 
@@ -49,16 +49,15 @@
                 <div class="form-group">
                     <label for="set_a">
                         <span class="label-title">Set A</span>
-                        <span class="label-sub">You can also type with brackets, e.g. {1,2,3}</span>
+                        <span class="label-sub">You can type elements e.g. {1,2,3} or &empty; / {} for null set</span>
                     </label>
                     <input 
                         type="text" 
                         id="set_a" 
                         name="set_a" 
                         value="{{ raw_a }}" 
-                        placeholder="e.g. {1,2,3} or 1 2 3"
+                        placeholder="e.g. {1,2,3} or {} or &empty;"
                         autocomplete="off"
-                        required
                         oninput="updateLivePreview()"
                     >
                 </div>
@@ -67,14 +66,14 @@
                 <div class="form-group">
                     <label for="relation_r">
                         <span class="label-title">Relation R</span>
-                        <span class="label-sub">e.g. {(1,1),(2,2)} or 1 1 2 2</span>
+                        <span class="label-sub">e.g. {(1,1),(2,2)} or &empty; / {} for null set</span>
                     </label>
                     <input 
                         type="text" 
                         id="relation_r" 
                         name="relation_r" 
                         value="{{ raw_r }}" 
-                        placeholder="e.g. {(1,1),(2,2)} or 1 1 2 2"
+                        placeholder="e.g. {(1,1),(2,2)} or {} or &empty;"
                         autocomplete="off"
                         oninput="updateLivePreview()"
                     >
@@ -138,8 +137,8 @@
                             type="button" 
                             class="btn-preset" 
                             onclick="generatePresetRelation('empty')" 
-                            title="Fills no relation pairs (R = {})"
-                        >Empty (&empty;)</button>
+                            title="Fills null set / empty relation (R = {})"
+                        >Null Set (&empty;)</button>
                     </div>
                 </div>
 
@@ -245,6 +244,7 @@
                         <h3 class="card-title">Relation Matrix (Adjacency)</h3>
                         <p class="card-subtitle">Entry (x, y) = 1 if (x, y) ∈ R, else 0</p>
                         <div class="matrix-wrapper">
+                            {% if results.matrix.headers %}
                             <table class="relation-matrix">
                                 <thead>
                                     <tr>
@@ -267,6 +267,9 @@
                                     {% endfor %}
                                 </tbody>
                             </table>
+                            {% else %}
+                            <p class="empty-graph">Set A is empty (&empty;). The relation matrix is 0 &times; 0.</p>
+                            {% endif %}
                         </div>
                     </div>
 
@@ -291,6 +294,19 @@
 
     <!-- Client-side JavaScript for Live Preview, Dynamic Presets, and Theme Switching -->
     <script>
+        // Checks if input represents the null / empty set
+        function isNullSetInput(str) {
+            if (!str) return true;
+            const s = str.trim().toLowerCase();
+            const nullKeywords = new Set([
+                "", "{}", "∅", "\\emptyset", "null", "null set", "nullset",
+                "empty", "empty set", "emptyset", "phi", "φ", "none", "set()"
+            ]);
+            if (nullKeywords.has(s)) return true;
+            const cleaned = s.replace(/[\{\}\(\)\[\]\<\>\,;\'\"]/g, ' ').trim();
+            return nullKeywords.has(cleaned) || cleaned === "";
+        }
+
         // Cleans input by replacing { } ( ) [ ] < > , ; with spaces
         function cleanInput(str) {
             if (!str) return [];
@@ -301,6 +317,12 @@
             const rawR = document.getElementById('relation_r').value;
             const livePreview = document.getElementById('livePreview');
             const liveWarning = document.getElementById('liveWarning');
+
+            if (isNullSetInput(rawR)) {
+                livePreview.textContent = 'R = {}';
+                liveWarning.style.display = 'none';
+                return;
+            }
 
             const tokens = cleanInput(rawR);
             if (tokens.length === 0) {
@@ -340,10 +362,14 @@
         // Parses the current value in Set A box
         function parseSetInput() {
             const rawA = document.getElementById('set_a').value;
+            if (isNullSetInput(rawA)) {
+                return { valid: true, isNumeric: true, tokens: [], isEmptySet: true };
+            }
+
             const tokens = cleanInput(rawA);
 
             if (tokens.length === 0) {
-                return { valid: false, message: "Enter set A first", tokens: [] };
+                return { valid: true, isNumeric: true, tokens: [], isEmptySet: true };
             }
 
             // Remove duplicates
@@ -355,17 +381,26 @@
             return {
                 valid: true,
                 isNumeric: isNumeric,
-                tokens: uniqueTokens
+                tokens: uniqueTokens,
+                isEmptySet: false
             };
         }
 
         // Generates relation R from the current elements in Set A
         function generatePresetRelation(type) {
             const liveWarning = document.getElementById('liveWarning');
+
+            if (type === 'empty') {
+                document.getElementById('relation_r').value = "{}";
+                liveWarning.style.display = 'none';
+                updateLivePreview();
+                return;
+            }
+
             const parsedA = parseSetInput();
 
-            if (!parsedA.valid) {
-                liveWarning.textContent = parsedA.message;
+            if (!parsedA.valid || parsedA.tokens.length === 0) {
+                liveWarning.textContent = "Enter a non-empty set A first";
                 liveWarning.style.display = 'block';
                 return;
             }
@@ -379,12 +414,6 @@
             }
 
             liveWarning.style.display = 'none';
-
-            if (type === 'empty') {
-                document.getElementById('relation_r').value = "";
-                updateLivePreview();
-                return;
-            }
 
             let tokens = parsedA.tokens;
             let pairs = [];

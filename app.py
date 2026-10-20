@@ -1,7 +1,7 @@
 """
 app.py
 
-Flask Web Application for analyzing binary relation properties.
+Flask Web Application for analyzing relation properties.
 Imports and reuses functions directly from relations.py without modifying its logic.
 
 Features:
@@ -165,49 +165,52 @@ def index():
         raw_a = request.form.get("set_a", "").strip()
         raw_r = request.form.get("relation_r", "").strip()
 
-        if not raw_a:
-            error = "Error: Set A cannot be empty. Please enter space or comma separated elements."
-        else:
-            try:
-                # 1. Parse Set A using relations.py parse_set
-                A = parse_set(raw_a)
-                if not A:
-                    raise ValueError("Error: Set A contains no valid elements.")
+        try:
+            # 1. Parse Set A using relations.py parse_set (supports null/empty sets)
+            A = parse_set(raw_a)
 
-                # 2. Parse Relation R using relations.py parse_relation
-                R = parse_relation(raw_r, A)
+            # 2. Parse Relation R using relations.py parse_relation (supports null/empty relations)
+            R = parse_relation(raw_r, A)
 
-                # Format set and relation text
-                set_a_str = f"A = {format_set(A)}"
-                relation_r_str = f"R = {format_relation(R)}"
+            # Format set and relation text
+            set_a_str = f"A = {format_set(A)}"
+            relation_r_str = f"R = {format_relation(R)}"
 
-                # 3. Evaluate Relation Properties via relations.py functions
-                is_refl, ce_refl = reflexive(A, R)
-                is_irrefl, ce_irrefl = irreflexive(A, R)
-                is_sym, ce_sym = symmetric(A, R)
-                is_antisym, ce_antisym = antisymmetric(A, R)
-                is_asym, ce_asym = asymmetric(A, R)
-                is_trans, ce_trans = transitive(A, R)
+            # 3. Evaluate Relation Properties via relations.py functions
+            is_refl, ce_refl = reflexive(A, R)
+            is_irrefl, ce_irrefl = irreflexive(A, R)
+            is_sym, ce_sym = symmetric(A, R)
+            is_antisym, ce_antisym = antisymmetric(A, R)
+            is_asym, ce_asym = asymmetric(A, R)
+            is_trans, ce_trans = transitive(A, R)
 
-                # Reasons & Counterexamples
+            # Reasons & Counterexamples
+            if len(A) == 0:
+                reason_refl = "Vacuously true: Set A is empty (no elements x ∈ A exist)."
+                reason_irrefl = "Vacuously true: Set A is empty (no elements x ∈ A exist)."
+            else:
                 reason_refl = (
                     "For every x ∈ A, (x, x) ∈ R."
                     if is_refl
                     else f"Element '{ce_refl[0]}' ∈ A, but ({ce_refl[0]}, {ce_refl[0]}) ∉ R."
                 )
-
                 reason_irrefl = (
                     "For every x ∈ A, (x, x) ∉ R."
                     if is_irrefl
                     else f"Element '{ce_irrefl[0]}' ∈ A, and ({ce_irrefl[0]}, {ce_irrefl[0]}) ∈ R."
                 )
 
+            if len(R) == 0:
+                reason_sym = "Vacuously true: Relation R is empty (contains no pairs)."
+                reason_antisym = "Vacuously true: Relation R is empty (contains no pairs)."
+                reason_asym = "Vacuously true: Relation R is empty (contains no pairs)."
+                reason_trans = "Vacuously true: Relation R is empty (contains no pairs)."
+            else:
                 reason_sym = (
                     "For every (x, y) ∈ R, reverse pair (y, x) ∈ R."
                     if is_sym
                     else f"Pair ({ce_sym[0]}, {ce_sym[1]}) ∈ R, but ({ce_sym[1]}, {ce_sym[0]}) ∉ R."
                 )
-
                 reason_antisym = (
                     "No distinct x ≠ y exist where both (x, y) ∈ R and (y, x) ∈ R."
                     if is_antisym
@@ -228,132 +231,132 @@ def index():
                     (x, y), (y2, z), (missing_x, missing_z) = ce_trans
                     reason_trans = f"({x}, {y}) ∈ R and ({y2}, {z}) ∈ R, but required ({missing_x}, {missing_z}) ∉ R."
 
-                # Build 6-properties grid data
-                properties_list = [
+            # Build 6-properties grid data
+            properties_list = [
+                {
+                    "name": "Reflexive",
+                    "definition": "∀x ∈ A, (x, x) ∈ R",
+                    "satisfied": is_refl,
+                    "reason": reason_refl,
+                },
+                {
+                    "name": "Irreflexive",
+                    "definition": "∀x ∈ A, (x, x) ∉ R",
+                    "satisfied": is_irrefl,
+                    "reason": reason_irrefl,
+                },
+                {
+                    "name": "Symmetric",
+                    "definition": "∀x,y ∈ A, (x, y) ∈ R ⇒ (y, x) ∈ R",
+                    "satisfied": is_sym,
+                    "reason": reason_sym,
+                },
+                {
+                    "name": "Antisymmetric",
+                    "definition": "∀x,y ∈ A, (x,y) ∈ R ∧ (y,x) ∈ R ⇒ x = y",
+                    "satisfied": is_antisym,
+                    "reason": reason_antisym,
+                },
+                {
+                    "name": "Asymmetric",
+                    "definition": "∀x,y ∈ A, (x, y) ∈ R ⇒ (y, x) ∉ R",
+                    "satisfied": is_asym,
+                    "reason": reason_asym,
+                },
+                {
+                    "name": "Transitive",
+                    "definition": "∀x,y,z ∈ A, (x,y) ∈ R ∧ (y,z) ∈ R ⇒ (x,z) ∈ R",
+                    "satisfied": is_trans,
+                    "reason": reason_trans,
+                },
+            ]
+
+            # 4A. Evaluate Equivalence Relation (Reflexive + Symmetric + Transitive)
+            is_equivalence = is_refl and is_sym and is_trans
+            missing_eq = []
+            if not is_refl:
+                missing_eq.append("Reflexivity")
+            if not is_sym:
+                missing_eq.append("Symmetry")
+            if not is_trans:
+                missing_eq.append("Transitivity")
+
+            if is_equivalence:
+                eq_reason = "Relation R is an Equivalence Relation because it satisfies Reflexivity, Symmetry, and Transitivity."
+            else:
+                eq_reason = f"Relation R is NOT an Equivalence Relation because it lacks: {', '.join(missing_eq)}."
+
+            equivalence_data = {
+                "is_satisfied": is_equivalence,
+                "title": "Equivalence Relation",
+                "badge": "YES" if is_equivalence else "NO",
+                "reason": eq_reason,
+                "requirements": [
+                    {"name": "Reflexive", "ok": is_refl},
+                    {"name": "Symmetric", "ok": is_sym},
+                    {"name": "Transitive", "ok": is_trans},
+                ],
+            }
+
+            # 4B. Evaluate Partial Order / Poset (Reflexive + Antisymmetric + Transitive)
+            is_partial_order = is_refl and is_antisym and is_trans
+            missing_po = []
+            if not is_refl:
+                missing_po.append("Reflexivity")
+            if not is_antisym:
+                missing_po.append("Antisymmetry")
+            if not is_trans:
+                missing_po.append("Transitivity")
+
+            if is_partial_order:
+                po_reason = "Relation R is a Partial Order (Poset) because it satisfies Reflexivity, Antisymmetry, and Transitivity."
+            else:
+                po_reason = f"Relation R is NOT a Partial Order because it lacks: {', '.join(missing_po)}."
+
+            poset_data = {
+                "is_satisfied": is_partial_order,
+                "title": "Partial Order (Poset)",
+                "badge": "YES" if is_partial_order else "NO",
+                "reason": po_reason,
+                "requirements": [
+                    {"name": "Reflexive", "ok": is_refl},
+                    {"name": "Antisymmetric", "ok": is_antisym},
+                    {"name": "Transitive", "ok": is_trans},
+                ],
+            }
+
+            # 5. Build Relation Matrix
+            sorted_A = sorted(list(A))
+            matrix_data = {
+                "headers": sorted_A,
+                "rows": [
                     {
-                        "name": "Reflexive",
-                        "definition": "∀x ∈ A, (x, x) ∈ R",
-                        "satisfied": is_refl,
-                        "reason": reason_refl,
-                    },
-                    {
-                        "name": "Irreflexive",
-                        "definition": "∀x ∈ A, (x, x) ∉ R",
-                        "satisfied": is_irrefl,
-                        "reason": reason_irrefl,
-                    },
-                    {
-                        "name": "Symmetric",
-                        "definition": "∀x,y ∈ A, (x, y) ∈ R ⇒ (y, x) ∈ R",
-                        "satisfied": is_sym,
-                        "reason": reason_sym,
-                    },
-                    {
-                        "name": "Antisymmetric",
-                        "definition": "∀x,y ∈ A, (x,y) ∈ R ∧ (y,x) ∈ R ⇒ x = y",
-                        "satisfied": is_antisym,
-                        "reason": reason_antisym,
-                    },
-                    {
-                        "name": "Asymmetric",
-                        "definition": "∀x,y ∈ A, (x, y) ∈ R ⇒ (y, x) ∉ R",
-                        "satisfied": is_asym,
-                        "reason": reason_asym,
-                    },
-                    {
-                        "name": "Transitive",
-                        "definition": "∀x,y,z ∈ A, (x,y) ∈ R ∧ (y,z) ∈ R ⇒ (x,z) ∈ R",
-                        "satisfied": is_trans,
-                        "reason": reason_trans,
-                    },
+                        "element": x,
+                        "cells": [
+                            {
+                                "value": 1 if (x, y) in R else 0,
+                                "is_diagonal": (x == y)
+                            }
+                            for y in sorted_A
+                        ]
+                    }
+                    for x in sorted_A
                 ]
+            }
 
-                # 4A. Evaluate Equivalence Relation (Reflexive + Symmetric + Transitive)
-                is_equivalence = is_refl and is_sym and is_trans
-                missing_eq = []
-                if not is_refl:
-                    missing_eq.append("Reflexivity")
-                if not is_sym:
-                    missing_eq.append("Symmetry")
-                if not is_trans:
-                    missing_eq.append("Transitivity")
+            # 6. Build SVG Graph
+            svg_graph = generate_svg_graph(A, R)
 
-                if is_equivalence:
-                    eq_reason = "Relation R is an Equivalence Relation because it satisfies Reflexivity, Symmetry, and Transitivity."
-                else:
-                    eq_reason = f"Relation R is NOT an Equivalence Relation because it lacks: {', '.join(missing_eq)}."
+            results = {
+                "properties": properties_list,
+                "equivalence": equivalence_data,
+                "poset": poset_data,
+                "matrix": matrix_data,
+                "svg_graph": svg_graph,
+            }
 
-                equivalence_data = {
-                    "is_satisfied": is_equivalence,
-                    "title": "Equivalence Relation",
-                    "badge": "YES" if is_equivalence else "NO",
-                    "reason": eq_reason,
-                    "requirements": [
-                        {"name": "Reflexive", "ok": is_refl},
-                        {"name": "Symmetric", "ok": is_sym},
-                        {"name": "Transitive", "ok": is_trans},
-                    ],
-                }
-
-                # 4B. Evaluate Partial Order / Poset (Reflexive + Antisymmetric + Transitive)
-                is_partial_order = is_refl and is_antisym and is_trans
-                missing_po = []
-                if not is_refl:
-                    missing_po.append("Reflexivity")
-                if not is_antisym:
-                    missing_po.append("Antisymmetry")
-                if not is_trans:
-                    missing_po.append("Transitivity")
-
-                if is_partial_order:
-                    po_reason = "Relation R is a Partial Order (Poset) because it satisfies Reflexivity, Antisymmetry, and Transitivity."
-                else:
-                    po_reason = f"Relation R is NOT a Partial Order because it lacks: {', '.join(missing_po)}."
-
-                poset_data = {
-                    "is_satisfied": is_partial_order,
-                    "title": "Partial Order (Poset)",
-                    "badge": "YES" if is_partial_order else "NO",
-                    "reason": po_reason,
-                    "requirements": [
-                        {"name": "Reflexive", "ok": is_refl},
-                        {"name": "Antisymmetric", "ok": is_antisym},
-                        {"name": "Transitive", "ok": is_trans},
-                    ],
-                }
-
-                # 5. Build Relation Matrix
-                sorted_A = sorted(list(A))
-                matrix_data = {
-                    "headers": sorted_A,
-                    "rows": [
-                        {
-                            "element": x,
-                            "cells": [
-                                {
-                                    "value": 1 if (x, y) in R else 0,
-                                    "is_diagonal": (x == y)
-                                }
-                                for y in sorted_A
-                            ]
-                        }
-                        for x in sorted_A
-                    ]
-                }
-
-                # 6. Build SVG Graph
-                svg_graph = generate_svg_graph(A, R)
-
-                results = {
-                    "properties": properties_list,
-                    "equivalence": equivalence_data,
-                    "poset": poset_data,
-                    "matrix": matrix_data,
-                    "svg_graph": svg_graph,
-                }
-
-            except ValueError as ve:
-                error = str(ve)
+        except ValueError as ve:
+            error = str(ve)
 
     return render_template(
         "index.html",

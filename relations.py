@@ -1,7 +1,7 @@
 """
 relations.py
 
-Functions to parse sets and binary relations from string inputs,
+Functions to parse sets and relations from string inputs,
 and to test mathematical properties of relations on a given set A:
 - Reflexive
 - Irreflexive
@@ -15,13 +15,48 @@ Each property checking function returns a tuple: (is_property: bool, counterexam
 
 import re
 
+NULL_SET_KEYWORDS = {
+    "",
+    "{}",
+    "∅",
+    r"\emptyset",
+    "null",
+    "null set",
+    "nullset",
+    "empty",
+    "empty set",
+    "emptyset",
+    "phi",
+    "φ",
+    "Φ",
+    "none",
+    "set()",
+    "null_set",
+    "empty_set",
+}
+
+
+def is_null_set_input(input_str: str) -> bool:
+    """
+    Checks if an input string represents the null (empty) set.
+    Supports formats: "", "{}", "∅", "\\emptyset", "null", "null set", "empty", "phi", etc.
+    """
+    if not input_str:
+        return True
+    s = input_str.strip().lower()
+    if s in NULL_SET_KEYWORDS:
+        return True
+    cleaned = re.sub(r'[\{\}\(\)\[\]\<\>\,;\'\"]', ' ', s).strip()
+    return cleaned in NULL_SET_KEYWORDS or cleaned == ""
+
 
 def parse_set(input_str: str) -> set[str]:
     """
     Parses a user input string into a set of elements (strings).
     Replaces delimiters { } ( ) [ ] < > , ; with spaces before splitting.
+    Correctly recognizes null/empty set inputs (e.g. {}, ∅, null, empty, phi).
     """
-    if not input_str:
+    if is_null_set_input(input_str):
         return set()
 
     # Replace delimiters { } ( ) [ ] < > , ; with spaces
@@ -35,10 +70,12 @@ def parse_relation(input_str: str, A: set[str] = None) -> set[tuple[str, str]]:
     """
     Parses a user input string into a set of ordered pairs.
     Replaces delimiters { } ( ) [ ] < > , ; with spaces before grouping into pairs.
+    Correctly recognizes null/empty set inputs (e.g. {}, ∅, null, empty, phi).
 
     Example inputs:
       - "1 2 3 1 3 1" -> {('1', '2'), ('3', '1')}
       - "{(1,1), (2,2), (3,3)}" -> {('1', '1'), ('2', '2'), ('3', '3')}
+      - "{}" or "∅" or "null" -> set() (null relation)
 
     Args:
         input_str: User input string representing relation pairs.
@@ -51,7 +88,7 @@ def parse_relation(input_str: str, A: set[str] = None) -> set[tuple[str, str]]:
     Raises:
         ValueError: If the number of elements is odd, or if an element is not in set A.
     """
-    if not input_str:
+    if is_null_set_input(input_str):
         print("R = {}")
         return set()
 
